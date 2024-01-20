@@ -1,8 +1,144 @@
+openapi: 3.0.0
+info:
+  title: GitHub Repository Management Action
+  version: 1.0.0
+  description: An action to manage repositories on GitHub, including data retrieval, updating, and creation of new repositories.
+servers:
+  - url: https://api.github.com
+    description: GitHub API server
 paths:
   /repos/{owner}/{repo}/contents/{path}:
     get:
-      summary: Get contents of a file
-      description: |
-        This endpoint retrieves the contents of a file including its SHA. 
-        Use this SHA when updating the file to ensure data consistency.
-        # ... other specifications
+      summary: Retrieve content from a file in the repository
+      operationId: getFileContent
+      parameters:
+        - in: path
+          name: owner
+          required: true
+          schema:
+            type: string
+          description: The owner of the repository
+        - in: path
+          name: repo
+          required: true
+          schema:
+            type: string
+          description: The name of the repository
+        - in: path
+          name: path
+          required: true
+          schema:
+            type: string
+          description: The path to the file in the repository
+      responses:
+        '200':
+          description: File content retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: string
+                    description: Content of the file
+        '404':
+          description: File not found
+    put:
+      summary: Update or add content to a file in the repository
+      operationId: updateFileContent
+      parameters:
+        - in: path
+          name: owner
+          required: true
+          schema:
+            type: string
+          description: The owner of the repository
+        - in: path
+          name: repo
+          required: true
+          schema:
+            type: string
+          description: The name of the repository
+        - in: path
+          name: path
+          required: true
+          schema:
+            type: string
+          description: The path to the file in the repository
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Commit message for the change
+                content:
+                  type: string
+                  description: Base64 encoded content to be added or updated in the file
+                sha:
+                  type: string
+                  description: SHA of the file to be updated, if applicable
+      responses:
+        '200':
+          description: File content updated successfully
+        '404':
+          description: File not found
+  /user/repos:
+    post:
+      summary: Create a new private GitHub repository
+      operationId: createRepository
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  description: The name of the new repository
+                description:
+                  type: string
+                  description: A short description of the repository
+                private:
+                  type: boolean
+                  default: true
+                  description: Set to true to create a private repository
+                auto_init:
+                  type: boolean
+                  default: true
+                  description: Automatically initialize the repository with a README file
+      responses:
+        '201':
+          description: Repository created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Repository'
+        '400':
+          description: Invalid input
+security:
+  - BearerAuth: []
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Repository:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        full_name:
+          type: string
+        html_url:
+          type: string
