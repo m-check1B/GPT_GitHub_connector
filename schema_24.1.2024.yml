@@ -34,6 +34,7 @@ paths:
                   $ref: '#/components/schemas/Repository'
         '404':
           description: User not found
+
     post:
       summary: Create a new private GitHub repository
       operationId: createRepository
@@ -70,7 +71,7 @@ paths:
         '400':
           description: Invalid input
 
-  /repos/{owner}/{repo}/contents/{path}:
+  /repos/{owner}/{repo}/contents/{path}/sha:
     get:
       summary: Retrieve SHA for a specific file
       operationId: getSHA
@@ -90,7 +91,6 @@ paths:
           required: true
           schema:
             type: string
-          description: The path to the file in the repository, including the filename
       responses:
         '200':
           description: SHA retrieved successfully
@@ -99,11 +99,44 @@ paths:
               schema:
                 type: object
                 properties:
+                  file:
+                    $ref: '#/components/schemas/File'
                   sha:
                     type: string
                     description: SHA of the file
         '404':
           description: File or repository not found
+
+  /repos/{owner}/{repo}/contents/{path}:
+    get:
+      summary: Read or print a file in the repository
+      operationId: readFile
+      parameters:
+        - in: path
+          name: owner
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: repo
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: File content retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/File'
+        '404':
+          description: File or repository not found
+
     put:
       summary: Create or update a file in the repository
       operationId: createOrUpdateFile
@@ -142,8 +175,15 @@ paths:
       responses:
         '200':
           description: File updated successfully
+          application/json:
+              schema:
+                $ref: '#/components/schemas/File'
         '201':
           description: File created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/File'
         '404':
           description: File or repository not found
 
@@ -165,8 +205,24 @@ paths:
       responses:
         '200':
           description: List of branches retrieved successfully
-        '404':
-          description: Repository not found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    commit:
+                      type: object
+                      properties:
+                        sha:
+                          type: string
+                        url:
+                          type: string
+                          format: uri
+
     post:
       summary: Create a new branch in the repository
       operationId: createBranch
@@ -198,11 +254,6 @@ paths:
           description: Repository not found
 
 components:
-  securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
   schemas:
     Repository:
       type: object
@@ -222,7 +273,27 @@ components:
         branches_count:
           type: integer
           description: Number of branches in the repository
-    # Define other necessary schemas here as required for your API.
+
+    File:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [file, dir]
+          description: Type of the item, either a file or a directory.
+        name:
+          type: string
+          description: Name of the file or directory.
+        path:
+          type: string
+          description: Path of the file or directory relative to the repository's root.
+        size:
+          type: integer
+          description: Size of the file in bytes. This property is only relevant for files.
+        url:
+          type: string
+          format: uri
+          description: URL to access the file or directory.
 
 security:
   - BearerAuth: []
